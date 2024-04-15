@@ -50,7 +50,7 @@ const Page = () => {
     setPage(0);
     setRowsPerPage(5);
     setValue([]);
-
+  
     if (e.target.files) {
       setLoading(true); // Setting loading state when file reading process starts
       const file = e.target.files[0];
@@ -61,10 +61,25 @@ const Page = () => {
         const workbook = read(data, { type: "array" });
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const result = utils.sheet_to_json(worksheet);
-        setUploadData(result);
-        setValue(result);
-        setCount(result.length);
+        const result = utils.sheet_to_json(worksheet, { raw: true }); // Add { raw: true } to get raw values
+        // Convert serial numbers to human-readable dates
+        const formattedResult = result.map((row) => {
+          const formattedRow = {};
+          for (const key in row) {
+            if (Object.hasOwnProperty.call(row, key)) {
+              // Check if the value looks like a date and convert it if it does
+              if (!isNaN(row[key]) && typeof row[key] === 'number' && isDateValue(row[key])) {
+                formattedRow[key] = excelSerialToDate(row[key]);
+              } else {
+                formattedRow[key] = row[key];
+              }
+            }
+          }
+          return formattedRow;
+        });
+        setUploadData(formattedResult);
+        setValue(formattedResult);
+        setCount(formattedResult.length);
         setLoading(false); // Setting loading state after file reading process completes
       };
       reader.readAsArrayBuffer(file);
@@ -73,6 +88,20 @@ const Page = () => {
       setLoading(false); // Setting loading state in case of failure
     }
   };
+  
+  // Function to convert Excel serial number to Date
+  function excelSerialToDate(serial) {
+    const date = new Date((serial - 25569) * 86400 * 1000);
+    return date.toLocaleDateString(); // Adjust formatting as needed
+  }
+  
+  // Function to check if the value resembles a date
+  function isDateValue(value) {
+    return value.toString().length <= 6;
+  }
+
+  
+  
 
   const removeFile = () => {
     setSelectedFile(null);
@@ -88,7 +117,7 @@ const Page = () => {
       const res = await updateInDB(result);
       setValue(result.reverse());
       setLoading(false);
-      window.location.reload(); // Reload the page after successful upload
+      window.location.href = '/';
     } catch (error) {
       console.error("Error:", error);
       setLoading(false);

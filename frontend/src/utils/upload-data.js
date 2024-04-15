@@ -2,14 +2,9 @@ import axios from 'axios';
 
 export const compareDataArrays = (originalArray, uploadArray) => {
   const resultArray = [];
-  const originalMap = {};
   const uploadMap = {};
 
-  // Create maps for faster lookups
-  originalArray.forEach(item => {
-    originalMap[item['MOBILE NO']] = item;
-  });
-
+  // Create map for faster lookups
   uploadArray.forEach(item => {
     uploadMap[item['MOBILE NO']] = item;
   });
@@ -20,9 +15,7 @@ export const compareDataArrays = (originalArray, uploadArray) => {
 
     if (matchingUploadItem) {
       const updatedItem = compareAndUpdate(existingItem, matchingUploadItem);
-      if (updatedItem) {
-        resultArray.push(updatedItem);
-      }
+      resultArray.push(updatedItem);
       delete uploadMap[existingItem['MOBILE NO']]; // Remove from uploadMap
     } else {
       resultArray.push(existingItem);
@@ -33,31 +26,37 @@ export const compareDataArrays = (originalArray, uploadArray) => {
   for (const key in uploadMap) {
     resultArray.push(uploadMap[key]);
   }
-console.log("resultArray",resultArray.length)
-console.log("uploadArray",uploadArray.length)
-console.log("originalArray",originalArray.length)
+
   return resultArray;
 }
 
-// Helper function to identify manipulated values and return remarks
-function compareAndUpdate(originalObject, updatedObject) {
-  const remarksList = [];
 
-  for (const key in originalObject) {
-      if (key !== "REMARKS" && updatedObject[key] !== originalObject[key]) {
-          remarksList.push(originalObject[key]);
+function compareAndUpdate(original, newObj) {
+  let remarks = original["REMARKS"] || "";
+
+  for (const key in newObj) {
+    if (newObj.hasOwnProperty(key)) {
+      let value = newObj[key];
+
+      if (key === "MOBILE NO") {
+        value = String(value);
+        original[key] = String(original[key] || '');
       }
+
+      if (!original.hasOwnProperty(key) || original[key] !== value) {
+        remarks += `|${key}: ${value}`; // Modify this line
+        original[key] = value;
+      }
+    }
   }
 
-  const remarks = remarksList.join('|');
-
-  const resultObject = {
-      ...originalObject,
-      REMARKS: originalObject.REMARKS ? originalObject.REMARKS + ' | ' + remarks : remarks,
-  };
-
-  return resultObject;
+  original["REMARKS"] = remarks;
+  return original;
 }
+
+
+
+
 
 export const updateInDB = async (data) => {
   console.log(data.length);
