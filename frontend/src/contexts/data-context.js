@@ -41,7 +41,7 @@ export const DataProvider = (props) => {
     try {
       // Make API request to fetch data
       const result = (
-        await axios.get('http://jsram.aifuturevision.in:5000/api/read')
+        await axios.get('')
       ).data;
 
       // Update the local state with fetched data
