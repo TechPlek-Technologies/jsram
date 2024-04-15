@@ -61,7 +61,7 @@ function compareAndUpdate(original, newObj) {
 export const updateInDB = async (data) => {
   console.log(data.length);
   try {
-    const result = await axios.post('http://jsram.aifuturevision.in:5000/api/upload', data);
+    const result = await axios.post('', data);
     alert("Data Uploaded successfully");
   } catch (error) {
     alert("Data upload Failed");
