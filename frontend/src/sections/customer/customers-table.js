@@ -30,12 +30,11 @@ export const CustomersTable = (props) => {
 
   if (items?.length > 0) {
     let paginatedData;
-    if(items.length>5){
+    if (items.length > 5) {
       paginatedData = items.slice(page * rowsPerPage, (page + 1) * rowsPerPage);
-    }else{
-       paginatedData=items
+    } else {
+      paginatedData = items;
     }
-    
 
     return (
       <Card>
@@ -44,23 +43,23 @@ export const CustomersTable = (props) => {
             <Table>
               <TableHead>
                 <TableRow>
-                  {paginatedData.length > 0 ? (
-                    keys.map((key) => {
-                      // Exclude keys "_id", 3, and 4
-                      if (
-                        key === "_id" ||
-                        key === "__v" ||
-                        key === "createdAt" ||
-                        key === "updatedAt"
-                      ) {
-                        return null;
-                      }
-                      return <TableCell key={key}>{key}</TableCell>;
-                    })
-                  ):""}
+                  {paginatedData.length > 0
+                    ? keys.map((key) => {
+                        // Exclude keys "_id", 3, and 4
+                        if (
+                          key === "_id" ||
+                          key === "__v" ||
+                          key === "createdAt" ||
+                          key === "updatedAt"
+                        ) {
+                          return null;
+                        }
+                        return <TableCell key={key}>{key}</TableCell>;
+                      })
+                    : ""}
                 </TableRow>
               </TableHead>
-              <TableBody sx={{fontSize:'10px'}}>
+              <TableBody sx={{ fontSize: "10px" }}>
                 {paginatedData.map((item, id) => (
                   <TableRow key={id}>
                     {keys.map(
@@ -69,7 +68,29 @@ export const CustomersTable = (props) => {
                         key !== "_id" &&
                         key !== "__v" &&
                         key !== "createdAt" &&
-                        key !== "updatedAt" && <TableCell key={index}>{item[key]}</TableCell>
+                        key !== "updatedAt" && (
+                          <TableCell
+                            key={index}
+                            sx={{
+                              maxHeight: "30px",
+                              maxWidth: "320px",
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              "&:hover": {
+                                whiteSpace: "normal",
+                                overflow: "visible",
+                                textOverflow: "inherit",
+                                zIndex: 9999,
+                                position: "relative",
+                                backgroundColor: "#fff", // Add background color for better visibility
+                                // Optionally, you can add more styling here for better hover display
+                              },
+                            }}
+                          >
+                            {item[key]}
+                          </TableCell>
+                        )
                     )}
                   </TableRow>
                 ))}
