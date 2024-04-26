@@ -25,6 +25,7 @@ import { compareDataArrays, updateInDB } from "src/utils/upload-data";
 import { read, utils } from "xlsx";
 import { useDataContext } from "src/contexts/data-context";
 import { height } from "@mui/system";
+import axios from "axios";
 
 const Page = () => {
   const [page, setPage] = useState(0);
@@ -35,6 +36,8 @@ const Page = () => {
   const [uploadData, setUploadData] = useState([]);
   const [loading, setLoading] = useState(false);
   const { data } = useDataContext();
+  const [fileName,setFilename]=useState("");
+  const [progress, setProgress] = useState(0);
 
   const handlePageChange = useCallback((event, value) => {
     setPage(value);
@@ -55,39 +58,101 @@ const Page = () => {
       setLoading(true); // Setting loading state when file reading process starts
       const file = e.target.files[0];
       setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = e.target.result;
-        const workbook = read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const result = utils.sheet_to_json(worksheet, { raw: true }); // Add { raw: true } to get raw values
-        // Convert serial numbers to human-readable dates
-        const formattedResult = result.map((row) => {
-          const formattedRow = {};
-          for (const key in row) {
-            if (Object.hasOwnProperty.call(row, key)) {
-              // Check if the value looks like a date and convert it if it does
-              if (!isNaN(row[key]) && typeof row[key] === 'number' && isDateValue(row[key])) {
-                formattedRow[key] = excelSerialToDate(row[key]);
-              } else {
-                formattedRow[key] = row[key];
-              }
-            }
-          }
-          return formattedRow;
-        });
-        setUploadData(formattedResult);
-        setValue(formattedResult);
-        setCount(formattedResult.length);
-        setLoading(false); // Setting loading state after file reading process completes
-      };
-      reader.readAsArrayBuffer(file);
+      setFilename(file.name)
+      setLoading(false);
     } else {
       alert("Failed to upload file");
       setLoading(false); // Setting loading state in case of failure
     }
   };
+
+
+// Inside your file processing function
+const fetchExcelDataFromServer = async (fileName) => {
+  try {
+    const encodedFileName = encodeURIComponent(fileName).replace(/ /g, '*');
+    const response = await axios.get(`http://localhost:4000/getData/${encodedFileName}`, { responseType: 'blob' });
+
+    console.log('Response type:', response.headers['content-type']);
+    console.log('File name:', fileName);
+    console.log('File size:', response.data.size);
+    console.log('Fetched successfully');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching file:', error);
+    throw new Error('Failed to fetch file from server');
+  }
+};
+
+const formatExcelData = async(blob) => {
+  try {
+    const fileData = [];
+    const totalSize = blob.size;
+    let processedSize = 0;
+    const chunkSize = 1024 * 1024; // 1MB chunk size
+    let offset = 0;
+
+    while (offset < blob.size) {
+      const chunk = blob.slice(offset, offset + chunkSize);
+      const arrayBuffer = await new Response(chunk).arrayBuffer();
+      console.log('Array buffer:', arrayBuffer); // Log the array buffer for debugging
+      
+      try {
+        const workbook = read(new Uint8Array(arrayBuffer), { type: 'array' });
+        console.log("Workbook:", workbook); // Log the workbook object for debugging
+      
+        // Move the code inside the try block
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const result = utils.sheet_to_json(worksheet, { raw: true });
+        fileData.push(...result);
+      } catch (error) {
+        console.error('Error reading workbook:', error);
+      }
+      
+      processedSize += chunk.size;
+      const currentProgress = (processedSize / totalSize) * 100;
+      setProgress(currentProgress);
+      offset += chunkSize;
+    }
+
+    return fileData;
+  } catch (error) {
+    console.error('Error formatting Excel data:', error);
+    throw new Error('Failed to format Excel data');
+  }
+};
+
+
+
+const readUploadFileFromServer = async () => {
+  try {
+    setLoading(true); // Set loading state when fetching file starts
+    const blob = await fetchExcelDataFromServer(fileName);
+   
+
+    try {
+      const formattedData = await formatExcelData(blob);
+      console.log(formattedData);
+      setUploadData(formattedData);
+      setValue(formattedData);
+      setCount(formattedData.length);
+      setProgress(100); // File processing complete
+      // Do something with formatted data
+    } catch (error) {
+      console.error('Error formatting Excel data:', error);
+      // Handle error
+    }
+    
+
+
+  } catch (error) {
+    console.error('Error fetching file:', error);
+    alert("Failed to upload file");
+  } finally {
+    setLoading(false);
+  }
+};
   
   // Function to convert Excel serial number to Date
   function excelSerialToDate(serial) {
@@ -111,8 +176,8 @@ const Page = () => {
 
   const handleUpload = async () => {
     setLoading(true);
+    console.log(data.length,value.length)
     const result = compareDataArrays(data, value);
-
     try {
       const res = await updateInDB(result);
       setValue(result.reverse());
@@ -124,6 +189,31 @@ const Page = () => {
     }
   };
 
+
+  const testUpload = async () => {
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+  
+      const response = await axios.post('http://localhost:4000/storeData', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      console.log('File uploaded successfully:', response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error posting data for verification:', error);
+    }
+    finally{
+      setLoading(false);
+    }
+  };
+
+
+
+ 
   return (
     <>
       <Head>
@@ -168,16 +258,36 @@ const Page = () => {
                             accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
                           />
                         </FormGroup>
-                        {value.length !== 0 && (
+                        {(
+                         <>
                           <Button
                             disabled={loading}
                             color="success"
-                            onClick={() => {
+                            onClick={ () => {
+                              testUpload();
+                            }}
+                          >
+                            {"Upload"}
+                          </Button>
+                          <Button
+                            disabled={loading}
+                            color="success"
+                            onClick={ () => {
+                              readUploadFileFromServer();
+                            }}
+                          >
+                            {"Read"}
+                          </Button>
+                          <Button
+                            disabled={loading}
+                            color="success"
+                            onClick={ () => {
                               handleUpload();
                             }}
                           >
-                            {"Save Data"}
+                            {"Save"}
                           </Button>
+                         </>
                         )}
                       </Col>
                       <Col md="6 text-left">

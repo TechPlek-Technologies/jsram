@@ -17,8 +17,6 @@ export const compareDataArrays = (originalArray, uploadArray) => {
       const updatedItem = compareAndUpdate(existingItem, matchingUploadItem);
       resultArray.push(updatedItem);
       delete uploadMap[existingItem['MOBILE NO']]; // Remove from uploadMap
-    } else {
-      resultArray.push(existingItem);
     }
   });
 
@@ -58,13 +56,19 @@ function compareAndUpdate(original, newObj) {
 
 
 
+  const CHUNK_SIZE = 5000; 
+
 export const updateInDB = async (data) => {
-  console.log(data.length);
   try {
-    const result = await axios.post('', data);
-    alert("Data Uploaded successfully");
+    // Split the data into chunks
+    for (let i = 0; i < data.length; i += CHUNK_SIZE) {
+      const chunk = data.slice(i, i + CHUNK_SIZE);
+      const result = await axios.post('http://jsram.aifuturevision.in:5000/api/upload', chunk);
+      console.log(`Chunk ${i / CHUNK_SIZE + 1} uploaded successfully`);
+    }
+    alert("All data uploaded successfully");
   } catch (error) {
-    alert("Data upload Failed");
+    alert("Data upload failed");
     console.error('Error:', error);
     throw error; // Re-throw the error to be caught in the calling function
   }
