@@ -25,6 +25,7 @@ import { compareDataArrays, updateInDB } from "src/utils/upload-data";
 import { read, utils } from "xlsx";
 import { useDataContext } from "src/contexts/data-context";
 import { height } from "@mui/system";
+import axios from "axios";
 
 const Page = () => {
   const [page, setPage] = useState(0);
@@ -35,6 +36,8 @@ const Page = () => {
   const [uploadData, setUploadData] = useState([]);
   const [loading, setLoading] = useState(false);
   const { data } = useDataContext();
+  const [fileName,setFilename]=useState("");
+  const [progress, setProgress] = useState(0);
 
   const handlePageChange = useCallback((event, value) => {
     setPage(value);
@@ -55,74 +58,163 @@ const Page = () => {
       setLoading(true); // Setting loading state when file reading process starts
       const file = e.target.files[0];
       setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = e.target.result;
-        const workbook = read(data, { type: "array" });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const result = utils.sheet_to_json(worksheet, { raw: true }); // Add { raw: true } to get raw values
-        // Convert serial numbers to human-readable dates
-        const formattedResult = result.map((row) => {
-          const formattedRow = {};
-          for (const key in row) {
-            if (Object.hasOwnProperty.call(row, key)) {
-              // Check if the value looks like a date and convert it if it does
-              if (!isNaN(row[key]) && typeof row[key] === 'number' && isDateValue(row[key])) {
-                formattedRow[key] = excelSerialToDate(row[key]);
-              } else {
-                formattedRow[key] = row[key];
-              }
-            }
-          }
-          return formattedRow;
-        });
-        setUploadData(formattedResult);
-        setValue(formattedResult);
-        setCount(formattedResult.length);
-        setLoading(false); // Setting loading state after file reading process completes
-      };
-      reader.readAsArrayBuffer(file);
+      setFilename(file.name)
+      setLoading(false);
     } else {
       alert("Failed to upload file");
       setLoading(false); // Setting loading state in case of failure
     }
   };
-  
-  // Function to convert Excel serial number to Date
-  function excelSerialToDate(serial) {
-    const date = new Date((serial - 25569) * 86400 * 1000);
-    return date.toLocaleDateString(); // Adjust formatting as needed
-  }
-  
-  // Function to check if the value resembles a date
-  function isDateValue(value) {
-    return value.toString().length <= 6;
-  }
 
-  
-  
 
+// Inside your file processing function
+const fetchExcelDataFromServer = async (fileName) => {
+  try {
+    const encodedFileName = encodeURIComponent(fileName).replace(/ /g, '*');
+    const response = await axios.get(`http://jsram.aifuturevision.in:5000/getData/${encodedFileName}`, { responseType: 'blob' });
+
+    console.log('Response type:', response.headers['content-type']);
+    console.log('File name:', fileName);
+    console.log('File size:', response.data.size);
+    console.log('Fetched successfully');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching file:', error);
+    throw new Error('Failed to fetch file from server');
+  }
+};
+
+const formatExcelData = async (blob) => {
+  try {
+    const fileData = [];
+    let isFirstChunk = true; // Flag to track if it's the first chunk
+    let keys = [];
+
+    const totalSize = blob.size;
+    let processedSize = 0;
+    const chunkSize = 1024 * 1024; // 1MB chunk size
+    let offset = 0;
+
+    while (offset < blob.size) {
+      const chunk = blob.slice(offset, offset + chunkSize);
+      const arrayBuffer = await new Response(chunk).arrayBuffer();
+
+      try {
+        const workbook = read(new Uint8Array(arrayBuffer), { type: 'array' });
+
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const rows = utils.sheet_to_json(worksheet, { header: 1, raw: true }); // Parse headers as the first row
+
+        if (isFirstChunk) {
+          keys = rows[0]; // Take keys from the first row of the first chunk
+          isFirstChunk = false;
+        }
+
+        // Skip the first row (headers) and loop through the rest of the rows
+        for (let i = 1; i < rows.length; i++) {
+          const rowData = {};
+          const row = rows[i];
+          for (let j = 0; j < keys.length; j++) {
+            rowData[keys[j]] = row[j]; // Assign each value to its corresponding key
+          }
+          fileData.push(rowData); // Push the row data to fileData array
+        }
+      } catch (error) {
+        console.error('Error reading workbook:', error);
+      }
+
+      processedSize += chunk.size;
+      const currentProgress = (processedSize / totalSize) * 100;
+      setProgress(currentProgress);
+      offset += chunkSize;
+    }
+
+    return fileData;
+  } catch (error) {
+    console.error('Error formatting Excel data:', error);
+    throw new Error('Failed to format Excel data');
+  }
+};
+
+
+const readUploadFileFromServer = async () => {
+  try {
+    setLoading(true); // Set loading state when fetching file starts
+    const blob = await fetchExcelDataFromServer(fileName);
+   
+
+    try {
+      const formattedData = await formatExcelData(blob);
+      console.log(formattedData);
+      setUploadData(formattedData);
+      setValue(formattedData);
+      setCount(formattedData.length);
+      setProgress(100); // File processing complete
+      // Do something with formatted data
+    } catch (error) {
+      console.error('Error formatting Excel data:', error);
+      // Handle error
+    }
+    
+
+
+  } catch (error) {
+    console.error('Error fetching file:', error);
+    alert("Failed to upload file");
+  } finally {
+    setLoading(false);
+  }
+};
+  
   const removeFile = () => {
     setSelectedFile(null);
     setValue([]);
     window.location.reload();
   };
 
-  const handleUpload = async () => {
+  const handleDBUpload = async () => {
     setLoading(true);
+    console.log(data.length,value.length)
     const result = compareDataArrays(data, value);
-
     try {
       const res = await updateInDB(result);
       setValue(result.reverse());
       setLoading(false);
-      window.location.href = '/';
+      // window.location.href = '/';
     } catch (error) {
       console.error("Error:", error);
       setLoading(false);
     }
   };
+
+
+  const testUpload = async () => {
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+  
+      const response = await axios.post('http://jsram.aifuturevision.in:5000/storeData', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      console.log('File uploaded successfully:', response.data);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error posting data for verification:', error);
+    }
+    finally{
+      setLoading(false);
+    }
+  };
+
+  const uploadAndCompare= async ()=>{
+
+      await testUpload();
+      await readUploadFileFromServer();
+  }
 
   return (
     <>
@@ -165,19 +257,30 @@ const Page = () => {
                             name="file"
                             type="file"
                             onChange={readUploadFile}
-                            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                            accept=".csv"
                           />
                         </FormGroup>
-                        {value.length !== 0 && (
+                        {(
+                         <>
                           <Button
                             disabled={loading}
                             color="success"
-                            onClick={() => {
-                              handleUpload();
+                            onClick={ () => {
+                              uploadAndCompare();
                             }}
                           >
-                            {"Save Data"}
+                            {"Upload"}
                           </Button>
+                          <Button
+                            disabled={loading}
+                            color="success"
+                            onClick={ () => {
+                              handleDBUpload();
+                            }}
+                          >
+                            {"Save"}
+                          </Button>
+                         </>
                         )}
                       </Col>
                       <Col md="6 text-left">

@@ -2,19 +2,25 @@ import Test from "../models/Test.js";
 // import csvParser from "json2csv"
 
 export const getResult = async (req, res) => {
-
   try {
-    const result = await Test.find();
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Content-Disposition', 'attachment; filename="result.json"');
 
-    // Send the result as JSON
-    if(result){
-    res.status(200).json(result);
-    }
+    const cursor = Test.find().cursor();
+
+    cursor.on('data', (doc) => {
+      res.write(JSON.stringify(doc) + '\n'); // Write each document to response stream
+    });
+
+    cursor.on('end', () => {
+      res.end(); // End response stream when all documents are streamed
+    });
   } catch (err) {
     console.error("test error : ", err);
     res.status(500).json({ success: false, message: "Internal Server error" });
   }
 };
+
 
 export const upload = async (req, res) => {
   const batchSize = 100; // Define your batch size here
