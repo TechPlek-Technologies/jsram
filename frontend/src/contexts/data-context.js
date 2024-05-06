@@ -46,9 +46,13 @@ export const DataProvider = (props) => {
   const fetchData = async () => {
     try {
       dispatch({ type: DATA_HANDLERS.SET_LOADING, payload: true });
-      const result = (await axios.get('http://jsram.aifuturevision.in:4000/api/read')).data;
-      console.log("fetchData", result);
-      dispatch({ type: DATA_HANDLERS.FETCH_DATA_SUCCESS, payload: result });
+      const response = await axios.get('http://jsram.aifuturevision.in:5000/api/read');
+      
+      if (response.data) {
+        dispatch({ type: DATA_HANDLERS.FETCH_DATA_SUCCESS, payload: response.data });
+      } else {
+        dispatch({ type: DATA_HANDLERS.FETCH_DATA_FAILURE, payload: "No data found" });
+      }
     } catch (error) {
       dispatch({ type: DATA_HANDLERS.FETCH_DATA_FAILURE, payload: error.message });
     } finally {
@@ -59,8 +63,8 @@ export const DataProvider = (props) => {
   const updateFileOnServer = async (data) => {
     try {
       setLoading(true);
-      await axios.post('http://localhost:4000/storeData', data);
-      console.log('File updated on server successfully');
+      await axios.post('http://jsram.aifuturevision.in:5000/storeResult', data);
+      
     } catch (error) {
       console.error('Error updating file on server:', error);
     } finally {
@@ -71,7 +75,7 @@ export const DataProvider = (props) => {
   const initializeDataFromServer = async () => {
     try {
       dispatch({ type: DATA_HANDLERS.SET_LOADING, payload: true });
-      const result = (await axios.get('http://localhost:4000/getData')).data;
+      const result = (await axios.get('http://jsram.aifuturevision.in:5000/getData')).data;
       console.log("initial data",result)
       dispatch({ type: DATA_HANDLERS.FETCH_DATA_SUCCESS, payload: result });
     } catch (error) {
@@ -90,8 +94,7 @@ export const DataProvider = (props) => {
 
   const handleSyncButtonClick = async () => {
     try {
-      await fetchData();
-      console.log("handleSyncButtonClick", state.data);
+     await fetchData();
       await updateFileOnServer(state.data);
       console.log('Data synced successfully');
     } catch (error) {

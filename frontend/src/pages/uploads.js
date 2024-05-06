@@ -71,7 +71,7 @@ const Page = () => {
 const fetchExcelDataFromServer = async (fileName) => {
   try {
     const encodedFileName = encodeURIComponent(fileName).replace(/ /g, '*');
-    const response = await axios.get(`http://localhost:4000/getData/${encodedFileName}`, { responseType: 'blob' });
+    const response = await axios.get(`http://jsram.aifuturevision.in:5000/getData/${encodedFileName}`, { responseType: 'blob' });
 
     console.log('Response type:', response.headers['content-type']);
     console.log('File name:', fileName);
@@ -84,9 +84,12 @@ const fetchExcelDataFromServer = async (fileName) => {
   }
 };
 
-const formatExcelData = async(blob) => {
+const formatExcelData = async (blob) => {
   try {
     const fileData = [];
+    let isFirstChunk = true; // Flag to track if it's the first chunk
+    let keys = [];
+
     const totalSize = blob.size;
     let processedSize = 0;
     const chunkSize = 1024 * 1024; // 1MB chunk size
@@ -95,21 +98,32 @@ const formatExcelData = async(blob) => {
     while (offset < blob.size) {
       const chunk = blob.slice(offset, offset + chunkSize);
       const arrayBuffer = await new Response(chunk).arrayBuffer();
-      console.log('Array buffer:', arrayBuffer); // Log the array buffer for debugging
-      
+
       try {
         const workbook = read(new Uint8Array(arrayBuffer), { type: 'array' });
-        console.log("Workbook:", workbook); // Log the workbook object for debugging
-      
-        // Move the code inside the try block
+
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
-        const result = utils.sheet_to_json(worksheet, { raw: true });
-        fileData.push(...result);
+        const rows = utils.sheet_to_json(worksheet, { header: 1, raw: true }); // Parse headers as the first row
+
+        if (isFirstChunk) {
+          keys = rows[0]; // Take keys from the first row of the first chunk
+          isFirstChunk = false;
+        }
+
+        // Skip the first row (headers) and loop through the rest of the rows
+        for (let i = 1; i < rows.length; i++) {
+          const rowData = {};
+          const row = rows[i];
+          for (let j = 0; j < keys.length; j++) {
+            rowData[keys[j]] = row[j]; // Assign each value to its corresponding key
+          }
+          fileData.push(rowData); // Push the row data to fileData array
+        }
       } catch (error) {
         console.error('Error reading workbook:', error);
       }
-      
+
       processedSize += chunk.size;
       const currentProgress = (processedSize / totalSize) * 100;
       setProgress(currentProgress);
@@ -122,7 +136,6 @@ const formatExcelData = async(blob) => {
     throw new Error('Failed to format Excel data');
   }
 };
-
 
 
 const readUploadFileFromServer = async () => {
@@ -154,27 +167,13 @@ const readUploadFileFromServer = async () => {
   }
 };
   
-  // Function to convert Excel serial number to Date
-  function excelSerialToDate(serial) {
-    const date = new Date((serial - 25569) * 86400 * 1000);
-    return date.toLocaleDateString(); // Adjust formatting as needed
-  }
-  
-  // Function to check if the value resembles a date
-  function isDateValue(value) {
-    return value.toString().length <= 6;
-  }
-
-  
-  
-
   const removeFile = () => {
     setSelectedFile(null);
     setValue([]);
     window.location.reload();
   };
 
-  const handleUpload = async () => {
+  const handleDBUpload = async () => {
     setLoading(true);
     console.log(data.length,value.length)
     const result = compareDataArrays(data, value);
@@ -182,7 +181,7 @@ const readUploadFileFromServer = async () => {
       const res = await updateInDB(result);
       setValue(result.reverse());
       setLoading(false);
-      window.location.href = '/';
+      // window.location.href = '/';
     } catch (error) {
       console.error("Error:", error);
       setLoading(false);
@@ -196,7 +195,7 @@ const readUploadFileFromServer = async () => {
       const formData = new FormData();
       formData.append('file', selectedFile);
   
-      const response = await axios.post('http://localhost:4000/storeData', formData, {
+      const response = await axios.post('http://jsram.aifuturevision.in:5000/storeData', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -211,9 +210,12 @@ const readUploadFileFromServer = async () => {
     }
   };
 
+  const uploadAndCompare= async ()=>{
 
+      await testUpload();
+      await readUploadFileFromServer();
+  }
 
- 
   return (
     <>
       <Head>
@@ -255,7 +257,7 @@ const readUploadFileFromServer = async () => {
                             name="file"
                             type="file"
                             onChange={readUploadFile}
-                            accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel"
+                            accept=".csv"
                           />
                         </FormGroup>
                         {(
@@ -264,7 +266,7 @@ const readUploadFileFromServer = async () => {
                             disabled={loading}
                             color="success"
                             onClick={ () => {
-                              testUpload();
+                              uploadAndCompare();
                             }}
                           >
                             {"Upload"}
@@ -273,16 +275,7 @@ const readUploadFileFromServer = async () => {
                             disabled={loading}
                             color="success"
                             onClick={ () => {
-                              readUploadFileFromServer();
-                            }}
-                          >
-                            {"Read"}
-                          </Button>
-                          <Button
-                            disabled={loading}
-                            color="success"
-                            onClick={ () => {
-                              handleUpload();
+                              handleDBUpload();
                             }}
                           >
                             {"Save"}

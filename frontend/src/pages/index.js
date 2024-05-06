@@ -13,14 +13,10 @@ import { OverviewAxisBankData } from "src/sections/overview/overview-axisBanking
 import { OverviewSBIBankData } from "src/sections/overview/overview-sbiBanking-data";
 import { useDataContext } from "src/contexts/data-context";
 import { useEffect, useState } from "react";
-import VerificationButton from "./VerificationButton";
-import axios from "axios";
 
 const Page = () => {
   const {  handleSyncButtonClick, loading,data } = useDataContext();
   const [cityCounts, setCityCounts] = useState([]);
-  const [serverData,setServerData]=useState([])
-
 
 
   return (
@@ -37,19 +33,8 @@ const Page = () => {
       >
         <Container maxWidth="xl">
           <Button onClick={handleSyncButtonClick} variant="contained" color="primary">Sync</Button>
-          <VerificationButton />
-          {loading ? (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                height: '80vh', // Set to 100% of the viewport height
-              }}
-            >
-              <CircularProgress />
-            </Box>
-          ) : data.length===0 ? (
+          {/* <VerificationButton /> */}
+          { loading? (
             <Box
               sx={{
                 display: 'flex',

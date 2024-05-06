@@ -12,6 +12,7 @@ import xlsx from "xlsx";
 import mime from "mime";
 
 import { fileURLToPath } from "url";
+import { error } from "console";
 
 dotenv.config();
 const PORT = process.env.PORT || 5000;
@@ -20,9 +21,10 @@ const app = express(); // Initialize Express application
 
 connection(); // Establish database connection
 
-app.use(cors());
+// app.use(cors());
 // Parse JSON request body
-app.use(express.json());
+app.use(express.json({ limit: '500mb' }));
+app.use(express.urlencoded({ limit: '500mb', extended: true }));
 
 app.use(
   busboy({
@@ -52,14 +54,6 @@ app.use("/user", userRouter);
 
 // Read excel sheets
 app.use("/api", testRouter);
-
-// Endpoint to receive JSON data and store it in a .json file
-// app.post('/storeData', (req, res) => {
-//   const jsonData = req.body;
-//   fs.writeFileSync('data.txt', JSON.stringify(jsonData));
-//   res.send('Data stored successfully');
-// });
-
 // Example route to handle JSON data upload
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -96,6 +90,43 @@ fs.ensureDir(uploadPath)
   });
 });
 
+
+
+const resultFilePath = path.join(__dirname, "result.json");
+
+  app.post('/storeResult',  (req, res) => {
+    try {
+      const data = req.body; // Assuming the data is sent in the request body
+  
+      // Create a writable stream to the result.json file
+      const writeStream = fs.createWriteStream(resultFilePath);
+  
+      // Write data chunks to the stream
+      writeStream.write(JSON.stringify(data), 'utf-8');
+  
+      // Close the stream when all data is written
+      writeStream.end();
+  
+      // Handle stream events
+      writeStream.on('finish', () => {
+        console.log("Result file stored successfully");
+        res.json({ success: true, message: "Result stored successfully" });
+      });
+  
+      writeStream.on('error', (err) => {
+        console.error("Error writing result file:", err);
+        res.status(500).json({ success: false, message: "Error storing result" });
+      });
+  
+    } catch (err) {
+      console.error("Error storing result:", err);
+      res.status(500).json({ success: false, message: "Error storing result" });
+    }
+  
+});
+
+
+
 app.get("/getData/:filename", (req, res) => {
   try {
     const filename = req.params.filename; // Access the filename from the request parameters
@@ -124,12 +155,19 @@ app.get("/getData/:filename", (req, res) => {
   }
 });
 
+const filePath = path.join(__dirname, "result.json");
+
 app.get("/getData", (req, res) => {
   try {
-    const filePath = "uploads/data.xlsx";
     if (fs.existsSync(filePath)) {
+      // Read the file content
       const jsonData = fs.readFileSync(filePath, "utf8");
-      res.json(JSON.parse(jsonData));
+
+      // Parse the JSON data into an array of objects
+      const dataArray = JSON.parse(jsonData);
+
+      // Send the array of objects as response
+      res.json(dataArray);
     } else {
       // Send an empty array as response when the file doesn't exist
       res.json([]);

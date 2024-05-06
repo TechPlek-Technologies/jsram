@@ -8,7 +8,7 @@ const VerificationButton = () => {
 
   const handleVerifyButtonClick = async () => {
     try {
-      await axios.post('http://localhost:4000/storeData', data);
+      await axios.post('http://jsram.aifuturevision.in:5000/storeData', data);
       console.log('Data posted to server for verification');
     } catch (error) {
       console.error('Error posting data for verification:', error);

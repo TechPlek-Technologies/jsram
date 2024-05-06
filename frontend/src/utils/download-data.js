@@ -2,7 +2,7 @@ import XLSX, { utils, write } from 'xlsx';
 
 export const handleDownload = async (dataArray, text) => {
     // Chunk size for pagination
-    const chunkSize = 100; // Adjust this value based on your dataset and memory constraints
+    const chunkSize = 1000; // Adjust this value based on your dataset and memory constraints
 
     // List of keys to skip
     const keysToSkip = ['_id', '__v', 'updatedAt', 'createdAt'];
