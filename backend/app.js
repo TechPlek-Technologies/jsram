@@ -13,6 +13,7 @@ import mime from "mime";
 
 import { fileURLToPath } from "url";
 import { error } from "console";
+import cors from 'cors';
 
 dotenv.config();
 const PORT = process.env.PORT || 5000;
@@ -33,14 +34,9 @@ app.use(
 ); // Insert the busboy middle-ware
 
 // Set up CORS headers
-app.use(function (req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header(
-    "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With,credentials, Content-Type, Accept"
-  );
-  next();
-});
+app.use(cors({
+  origin: 'http://jsram.aifuturevision.in'
+}));
 
 app.get("/", (req, res) => {
   res.send("Welcome to homepage");
