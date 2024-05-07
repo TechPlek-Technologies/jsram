@@ -13,7 +13,6 @@ import mime from "mime";
 
 import { fileURLToPath } from "url";
 import { error } from "console";
-import cors from 'cors';
 
 dotenv.config();
 const PORT = process.env.PORT || 5000;

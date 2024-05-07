@@ -195,7 +195,7 @@ const readUploadFileFromServer = async () => {
       const formData = new FormData();
       formData.append('file', selectedFile);
   
-      const response = await axios.post('http://jsram.aifuturevision.in:5000/storeData', formData, {
+      const response = await axios.post(`http://jsram.aifuturevision.in:5000/storeData`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

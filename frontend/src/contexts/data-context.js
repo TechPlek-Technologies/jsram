@@ -46,7 +46,7 @@ export const DataProvider = (props) => {
   const fetchData = async () => {
     try {
       dispatch({ type: DATA_HANDLERS.SET_LOADING, payload: true });
-      const response = await axios.get('http://jsram.aifuturevision.in:5000/api/read');
+      const response = await axios.get(`http://jsram.aifuturevision.in:5000/api/read`);
       
       if (response.data) {
         dispatch({ type: DATA_HANDLERS.FETCH_DATA_SUCCESS, payload: response.data });
@@ -60,23 +60,11 @@ export const DataProvider = (props) => {
     }
   };
 
-  const updateFileOnServer = async (data) => {
-    try {
-      setLoading(true);
-      await axios.post('http://jsram.aifuturevision.in:5000/storeResult', data);
-      
-    } catch (error) {
-      console.error('Error updating file on server:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const initializeDataFromServer = async () => {
     try {
       dispatch({ type: DATA_HANDLERS.SET_LOADING, payload: true });
-      const result = (await axios.get('http://jsram.aifuturevision.in:5000/getData')).data;
-      console.log("initial data",result)
+      const result = (await axios.get(`http://jsram.aifuturevision.in:5000/getData`)).data;
+      // console.log(result);
       dispatch({ type: DATA_HANDLERS.FETCH_DATA_SUCCESS, payload: result });
     } catch (error) {
       dispatch({ type: DATA_HANDLERS.FETCH_DATA_FAILURE, payload: error.message });
@@ -95,8 +83,7 @@ export const DataProvider = (props) => {
   const handleSyncButtonClick = async () => {
     try {
      await fetchData();
-      await updateFileOnServer(state.data);
-      console.log('Data synced successfully');
+      window.location.reload();
     } catch (error) {
       console.error('Error syncing data:', error);
     }

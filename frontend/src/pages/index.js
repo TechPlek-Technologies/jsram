@@ -18,7 +18,6 @@ const Page = () => {
   const {  handleSyncButtonClick, loading,data } = useDataContext();
   const [cityCounts, setCityCounts] = useState([]);
 
-
   return (
     <>
       <Head>

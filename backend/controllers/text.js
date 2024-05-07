@@ -1,23 +1,21 @@
 import Test from "../models/Test.js";
-// import csvParser from "json2csv"
+import fs from "fs-extra";
 
 export const getResult = async (req, res) => {
   try {
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Content-Disposition', 'attachment; filename="result.json"');
+    // Query the database and collect all the results
+    const results = await Test.find().lean();
 
-    const cursor = Test.find().cursor();
+    // Stringify the results
+    const jsonData = JSON.stringify(results);
 
-    cursor.on('data', (doc) => {
-      res.write(JSON.stringify(doc) + '\n'); // Write each document to response stream
-    });
+    // Write the JSON data to the file
+    fs.writeFileSync('result.json', jsonData);
 
-    cursor.on('end', () => {
-      res.end(); // End response stream when all documents are streamed
-    });
+    res.status(200).json({ success: true, message: 'Data written to file successfully' });
   } catch (err) {
-    console.error("test error : ", err);
-    res.status(500).json({ success: false, message: "Internal Server error" });
+    console.error('Error:', err);
+    res.status(500).json({ success: false, message: 'Internal Server error' });
   }
 };
 
