@@ -1,7 +1,11 @@
 import Data from "./data.model.js";
 
+const handleAsync = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
-export const getResult = async (req, res) => {
+
+export const getResult = handleAsync(async (req, res) => {
   try {
     // Query the database and collect all the results
     const results = await Data.find().lean();
@@ -10,9 +14,9 @@ export const getResult = async (req, res) => {
     console.error('Error:', err);
     res.status(500).json({ success: false, message: 'Internal Server error' });
   }
-};
+});
 
-export const upload = async (req, res) => {
+export const upload = handleAsync(async (req, res) => {
   const batchSize = 100; 
   const newData = req.body;
 
@@ -53,9 +57,9 @@ export const upload = async (req, res) => {
     console.error("Error during upload: ", err);
     res.status(500).json({ success: false, message: "Internal Server error" });
   }
-};
+});
 
-export const getPaginatedResult = async (req, res) => {
+export const getPaginatedResult = handleAsync(async (req, res) => {
   let { page, pageSize } = req.query;
   try {
     // If "page" and "pageSize" are not sent we will default them to 1 and 50.
@@ -85,9 +89,9 @@ export const getPaginatedResult = async (req, res) => {
   } catch (error) {
     return res.status(500).json({ error: error });
   }
-};
+});
 
-export const searchAndPaginate = async (req, res) => {
+export const searchAndPaginate = handleAsync(async (req, res) => {
   let { page, pageSize, searchQuery } = req.query;
   try {
     // If "page" and "pageSize" are not sent, default them to 1 and 50.
@@ -150,9 +154,9 @@ export const searchAndPaginate = async (req, res) => {
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
-};
+});
 
-export const getPaginatedfilterData = async (req, res) => {
+export const getPaginatedfilterData = handleAsync(async (req, res) => {
   const { filters, page, limit } = req.body;
   try {
     // Build the query object based on the provided filters
@@ -203,9 +207,9 @@ export const getPaginatedfilterData = async (req, res) => {
     console.error("Error fetching data:", error);
     return res.status(500).json({ error: "Internal Server Error" });
   }
-};
+});
 
-export const getUniqueCities = async (req, res) => {
+export const getUniqueCities = handleAsync(async (req, res) => {
   try {
     const cityCounts = await Data.aggregate([
       { $group: { _id: { $toLower: "$CITY" }, count: { $sum: 1 } } },
@@ -216,9 +220,9 @@ export const getUniqueCities = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
   }
-};
+});
 
-export const getdashBoardCounts = async (req, res) => {
+export const getdashBoardCounts = handleAsync(async (req, res) => {
   try {
     const countsPipeline = [
       // Project lowercase versions of selected fields
@@ -268,7 +272,7 @@ export const getdashBoardCounts = async (req, res) => {
     console.error('Error fetching data:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
-};
+});
 
 
 

@@ -73,7 +73,7 @@ const Page = () => {
   const fetchExcelDataFromServer = async (fileName) => {
     try {
       const encodedFileName = encodeURIComponent(fileName).replace(/ /g, '*');
-      const response = await axios.get(`http://localhost:5000/excel/download/${encodedFileName}`, { responseType: 'blob' });
+      const response = await axios.get(`${domain}/excel/download/${encodedFileName}`, { responseType: 'blob' });
 
       console.log('Response type:', response.headers['content-type']);
       console.log('File name:', fileName);
@@ -311,8 +311,10 @@ const Page = () => {
         alert("All data uploaded successfully");
       } else {
         console.log("Failed chunks:", failedChunks);
-        alert("Some chunks failed to upload. upload again");
-        setValue(failedChunks);
+        alert("Some chunks failed to upload. Attempting to upload again.");
+  
+        // Attempt to re-upload failed chunks recursively
+        await updateInDB(failedChunks);
       }
     } catch (error) {
       alert("Data upload failed");
@@ -320,6 +322,7 @@ const Page = () => {
       throw error; // Re-throw the error to be caught in the calling function
     }
   };
+  
   
   return (
     <>
