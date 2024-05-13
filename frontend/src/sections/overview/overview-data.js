@@ -51,6 +51,7 @@ export const OverviewData = (props) => {
       alert("Enter Valid Range")
     }
   };
+  console.log(data)
   
   return (
     <>
@@ -64,7 +65,7 @@ export const OverviewData = (props) => {
             <Typography color="text.secondary" variant="overline">
               Total Data
             </Typography>
-            <Typography variant="h4">{data?.length}</Typography>
+            <Typography variant="h4">{data?.total ?? "N/A"}</Typography>
           
           </Stack>
           <Avatar
@@ -80,7 +81,7 @@ export const OverviewData = (props) => {
           </Avatar>
         </Stack>
         <CardActions sx={{ justifyContent: "space-between" }} style={{ "marginBottom": "-25px"}}>
-        <Button
+        {/* <Button
             color="text.secondary"
             endIcon={
               <SvgIcon fontSize="small">
@@ -92,7 +93,7 @@ export const OverviewData = (props) => {
             onClick={handleDialogOpen}
             >
             Download
-          </Button>
+          </Button> */}
           <Button
             color="text.secondary"
             endIcon={

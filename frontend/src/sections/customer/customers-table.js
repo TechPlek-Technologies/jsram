@@ -13,6 +13,7 @@ import { Scrollbar } from "src/components/scrollbar";
 
 export const CustomersTable = (props) => {
   const {
+    loading,
     count = 0,
     items = [],
     onPageChange = () => {},
@@ -43,7 +44,7 @@ export const CustomersTable = (props) => {
             <Table>
               <TableHead>
                 <TableRow>
-                  {paginatedData.length > 0
+                  {items.length > 0
                     ? keys.map((key) => {
                         // Exclude keys "_id", 3, and 4
                         if (
@@ -60,7 +61,7 @@ export const CustomersTable = (props) => {
                 </TableRow>
               </TableHead>
               <TableBody sx={{ fontSize: "10px" }}>
-                {paginatedData.map((item, id) => (
+                {items.map((item, id) => (
                   <TableRow key={id}>
                     {keys.map(
                       (key, index) =>

@@ -13,10 +13,33 @@ import { OverviewAxisBankData } from "src/sections/overview/overview-axisBanking
 import { OverviewSBIBankData } from "src/sections/overview/overview-sbiBanking-data";
 import { useDataContext } from "src/contexts/data-context";
 import { useEffect, useState } from "react";
+import { getDashBoardInfo, getUniqueCities } from "src/api/api";
 
 const Page = () => {
-  const {  handleSyncButtonClick, loading,data } = useDataContext();
+  // const {  loading } = useDataContext();
   const [cityCounts, setCityCounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [dashboardData,setDashBoardData]=useState([]);
+
+  useEffect(() => {
+
+    setLoading(true)
+    const fetchUniqueCities = async () => {
+      const fetchedData = await getUniqueCities();
+      setCityCounts(fetchedData);
+    };
+
+    const dashboardInfo=async ()=>{
+      
+      const response=await getDashBoardInfo();
+      console.log(response)
+      setDashBoardData(response)
+
+    }
+    fetchUniqueCities();
+    dashboardInfo();
+    setLoading(false)
+  }, [])
 
   return (
     <>
@@ -31,9 +54,8 @@ const Page = () => {
         }}
       >
         <Container maxWidth="xl">
-          <Button onClick={handleSyncButtonClick} variant="contained" color="primary">Sync</Button>
           {/* <VerificationButton /> */}
-          { loading? (
+          {loading ?dashboardData&& (
             <Box
               sx={{
                 display: 'flex',
@@ -44,35 +66,35 @@ const Page = () => {
             >
               <CircularProgress />
             </Box>
-          ) :(
+          ) : (
             <Grid container spacing={1}>
               <Grid xs={12} sm={6} lg={3}>
-                <OverviewData sx={{ height: "100%" }} data={data} />
+                <OverviewData sx={{ height: "100%" }} data={dashboardData} />
               </Grid>
               <Grid xs={12} sm={6} lg={3}>
-                <OverviewTelecallingData sx={{ height: "100%" }} data={data} />
+                <OverviewTelecallingData sx={{ height: "100%" }} data={dashboardData} />
               </Grid>
               <Grid xs={12} sm={6} lg={3}>
-                <OverviewWhatsAppData sx={{ height: "100%" }} data={data} />
+                <OverviewWhatsAppData sx={{ height: "100%" }} data={dashboardData} />
               </Grid>
               <Grid xs={12} sm={6} lg={3}>
-                <OverviewSmsData sx={{ height: "100%" }} data={data} />
+                <OverviewSmsData sx={{ height: "100%" }} data={dashboardData} />
               </Grid>
               <Divider />
               <Grid xs={12} sm={6} lg={3}>
-                <OverviewEmailData sx={{ height: "100%" }} data={data} />
+                <OverviewEmailData sx={{ height: "100%" }} data={dashboardData} />
               </Grid>
               <Grid xs={12} sm={6} lg={3}>
-                <OverviewIVRData sx={{ height: "100%" }} data={data} />
+                <OverviewIVRData sx={{ height: "100%" }} data={dashboardData} />
               </Grid>
               <Grid xs={12} sm={6} lg={3}>
-                <OverviewAxisBankData sx={{ height: "100%" }} data={data} />
+                <OverviewAxisBankData sx={{ height: "100%" }} data={dashboardData} />
               </Grid>
               <Grid xs={12} sm={6} lg={3}>
-                <OverviewSBIBankData sx={{ height: "100%" }} data={data} />
+                <OverviewSBIBankData sx={{ height: "100%" }} data={dashboardData} />
               </Grid>
               <Grid xs={12} md={6} lg={4}>
-                <OverviewCityCount cities={cityCounts} sx={{ height: "100%" }} />
+               {dashboardData&&<OverviewCityCount cities={cityCounts} sx={{ height: "100%" }} />} 
               </Grid>
             </Grid>
           )}

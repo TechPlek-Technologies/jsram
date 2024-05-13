@@ -1,5 +1,7 @@
 import { createContext, useContext, useEffect, useReducer, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
+import { domain } from 'src/config';
+
 
 const HANDLERS = {
   INITIALIZE: 'INITIALIZE',
@@ -107,7 +109,7 @@ export const AuthProvider = (props) => {
   const signIn = async (email, password) => {
     try {
       // Make API request to authenticate user
-      const response = await fetch(`http://jsram.aifuturevision.in:5000/auth/login`, {
+      const response = await fetch(`${domain}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

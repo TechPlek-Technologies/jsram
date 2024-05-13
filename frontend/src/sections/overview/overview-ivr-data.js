@@ -27,36 +27,13 @@ import ArrowDownOnSquareIcon from "@heroicons/react/24/solid/ArrowDownOnSquareIc
 export const OverviewIVRData = (props) => {
   const { sx, data } = props;
   const [text,setText]=useState("Used");
-  let callingData = filterDataByStatus(data, "IVR", text.toUpperCase());
-  const [open, setOpen] = useState(false);
-  const [from, setFrom] = useState(1);
-  const [to, setTo] = useState(100);
  
  
   const toggle=(text)=>{
     let newText=text==="Used"? "Fresh" :"Used";
     setText(newText);
   }
-  const handleDialogOpen = () => {
-    setOpen(true);
-  };
 
-  const handleDialogClose = () => {
-    setOpen(false);
-  };
-
-  const handleDownloadWithRange = () => {
-    const start = parseInt(from, 10);
-    const end = parseInt(to, 10);
-    
-    if (!isNaN(start) && !isNaN(end) && start <= end) {
-      const slicedData = callingData.slice(start - 1, end); // Adjust the index if needed
-      handleDownload(slicedData,text);
-      handleDialogClose();
-    } else {
-      alert("Enter Valid Range")
-    }
-  };
 
   return (
    <>
@@ -67,7 +44,9 @@ export const OverviewIVRData = (props) => {
             <Typography color="text.secondary" variant="overline">
             {`ivr ${text} Data`}
             </Typography>
-            <Typography variant="h4">{callingData?.length}</Typography>
+            <Typography variant="h4">
+                {text === "Used" ? (data?.counts?.IVR ?? "N/A") : (data?.total-data?.counts?.IVR ?? "N/A")}
+              </Typography>
            
           </Stack>
           <Avatar
@@ -84,7 +63,7 @@ export const OverviewIVRData = (props) => {
         </Stack>
 
         <CardActions sx={{ justifyContent: "space-between" }} style={{ "marginBottom": "-25px" }}>
-        <Button
+        {/* <Button
             color="text.secondary"
             endIcon={
               <SvgIcon fontSize="small">
@@ -96,7 +75,7 @@ export const OverviewIVRData = (props) => {
             onClick={handleDialogOpen}
             >
             Download
-          </Button>
+          </Button> */}
           <Button
             color="inherit"
             endIcon={
@@ -116,42 +95,6 @@ export const OverviewIVRData = (props) => {
         </CardActions>
       </CardContent>
     </Card>
-    <Dialog open={open} onClose={handleDialogClose}>
-        <DialogTitle>Enter Range</DialogTitle>
-        <DialogContent>
-        <DialogContentText>
-            Enter the range for downloading data (from and to).
-          </DialogContentText>
-        <Grid container spacing={2}>
-
-        <Grid item xs={12} md={6}>
-              <TextField
-                label="From"
-                name="from"
-                type="number"
-                defaultValue={from}
-                onChange={(e) => setFrom(e.target.value)}
-                fullWidth
-              />
-            </Grid>
-        <Grid item xs={12} md={6}>
-              <TextField
-                label="To"
-                name="to"
-                defaultValue={to}
-                type="number"
-                onChange={(e) => setTo(e.target.value)}
-                fullWidth
-              />
-            </Grid>
-        </Grid>
-       
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDialogClose}>Cancel</Button>
-          <Button onClick={handleDownloadWithRange}>Download</Button>
-        </DialogActions>
-      </Dialog>
    </>
   );
 };

@@ -12,12 +12,12 @@ import {
 } from "@mui/material";
 import { Scrollbar } from "src/components/scrollbar";
 import { useCallback, useMemo, useState } from "react";
-import { applyPaginationForObject } from "src/utils/apply-pagination";
+import { applyPagination, applyPaginationForObject } from "src/utils/apply-pagination";
 
 
 const useCustomers = (data, page, rowsPerPage) => {
   return useMemo(() => {
-    return applyPaginationForObject(data, page, rowsPerPage);
+    return applyPagination(data, page, rowsPerPage);
   }, [page, rowsPerPage]);
 };
 
@@ -51,18 +51,20 @@ export const OverviewCityCount = (props) => {
             </TableHead>
 
             <TableBody>
-              {Object.entries(customers).map(([city, count], index) => (
+           
+              {customers.map((city, index) => (
                 <TableRow key={index}>
                   <TableCell>{index + 1}</TableCell>
-                  <TableCell>{city}</TableCell>
-                  <TableCell>{count}</TableCell>
+                  <TableCell>{city?.CITY}</TableCell>
+                  <TableCell>{city?.count}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
           <TablePagination
         component="div"
-        count={Object.keys(cities).length}
+        count={cities.length}
+        items={customers}
         onPageChange={handlePageChange}
         onRowsPerPageChange={handleRowsPerPageChange}
         page={page}

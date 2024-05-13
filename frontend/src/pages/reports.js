@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Head from "next/head";
 import { Box, CircularProgress, Container, Stack, Typography } from "@mui/material";
 import { Layout as DashboardLayout } from "src/layouts/dashboard/layout";
@@ -9,58 +9,43 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { useDataContext } from "src/contexts/data-context";
 import { handleDownload } from "src/utils/download-data";
 import FilterPop from "src/utils/filter-report";
+import axios from "axios";
+import { domain } from "src/config";
+import {
+  getPaginatedResult,
+  getPaginatedfilterData,
+  getUniqueCities,
+  searchAndPaginate,
+} from "src/api/api";
 
 const Page = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const { data } = useDataContext();
   const [count, setCount] = useState(0);
   const [value, setValue] = useState(data);
   const [searchTerm, setSearchTerm] = useState("");
   const [personName, setPersonName] = useState([]);
   const [uniqueCity, setUniqueCity] = useState([]);
   const [isFilterOpen, setFilterOpen] = useState(false);
+  const [data, setData] = useState(null);
   const [filterValues, setFilterValues] = useState({
-    city: [],
-    whatsappStatus: "All",
-    employeeStatus: "All",
-    whatsappFromDate: null,
-    whatsappToDate: null,
-    smsStatus: "All",
-    smsFromDate: null,
-    smsToDate: null,
-    callingStatus: "All",
-    callingFromDate: null,
-    callingToDate: null,
-    axisBankStatus: "All",
-    sbiBankStatus: "All",
+    CITY: [], // Update from 'city' to 'CITY'
+    "WHATS APP": "All", // Update from 'whatsappStatus' to 'WHATS APP'
+    "EMPLOYMENT TYPE": "All", // Update from 'employeeStatus' to 'EMPLOYMENT TYPE'
+    DATE: null, // Update from 'whatsappFromDate' to 'DATE'
+    DATE_3: null, // Update from 'whatsappToDate' to 'DATE_3'
+    SMS: "All", // Update from 'smsStatus' to 'SMS'
+    DATE_4: null, // Update from 'smsFromDate' to 'DATE_4'
+    CALLING: "All", // Update from 'callingStatus' to 'CALLING'
+    CALLING: null, // Update from 'callingFromDate' to 'CALLING'
+    DATE_5: null, // Update from 'callingToDate' to 'DATE_5'
+    "LOGIN DONE": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
+    "BANKS STATUS_1": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
+    "BANKS STATUS": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
+    "LOGIN BANK": "All", // Update from 'sbiBankStatus' to 'LOGIN BANK'
   });
-
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
-  useEffect(() => {
-    if (data) {
-      setValue(data);
-      setCount(data.length);
-      const uniqueCities = [...new Set(data?.map((item) => item?.CITY?.toLowerCase()))];
-      setUniqueCity(uniqueCities);
-      const filteredCustomers = data.filter((customer) =>
-        Object.values(customer).some((value) => {
-          if (typeof value === "string" || typeof value === "number") {
-            const stringValue = String(value).toLowerCase();
-            return stringValue.includes(searchTerm.toLowerCase());
-          }
-          return false;
-        })
-      );
-
-      if (searchTerm) {
-        setValue(filteredCustomers);
-      }
-    }
-  }, [data, searchTerm]);
+  
+  const [loading, setLoading] = useState(true);
 
   const handlePageChange = useCallback((event, value) => {
     setPage(value);
@@ -70,130 +55,91 @@ const Page = () => {
     setRowsPerPage(event.target.value);
   }, []);
 
-  const handleFilterClick = () => {
-    setFilterOpen(true);
-  };
-
   const handleFilterClose = () => {
     setFilterOpen(false);
   };
 
-  const handleFilterOptionClick = () => {
+  const handleFilterOptionClick = async () => {
     // Use filterValues state to filter your main data
-
-    const filteredData = data.filter((item) => {
-      // Check for whatsappStatus
-      if (filterValues.whatsappStatus !== "All") {
-        if (filterValues.whatsappStatus === "No Status") {
-          if (
-            item["WHATS APP"] !== undefined &&
-            item["WHATS APP"] !== null &&
-            item["WHATS APP"] !== ""
-          ) {
-            return false;
-          }
-        } else if (item["WHATS APP"]?.toUpperCase() !== filterValues.whatsappStatus.toUpperCase()) {
-          return false;
-        }
-      }
-
-      // Check for smsStatus
-      if (filterValues.smsStatus !== "All") {
-        if (filterValues.smsStatus === "No Status") {
-          if (item["SMS"] !== undefined && item["SMS"] !== null && item["SMS"] !== "") {
-            return false;
-          }
-        } else if (item["SMS"]?.toUpperCase() !== filterValues.smsStatus.toUpperCase()) {
-          return false;
-        }
-      }
-
-      // Check for callingStatus
-      if (filterValues.callingStatus !== "All") {
-        if (filterValues.callingStatus === "No Status") {
-          if (item["CALLING"] !== undefined && item["CALLING"] !== null && item["CALLING"] !== "") {
-            return false;
-          }
-        } else if (item["CALLING"]?.toUpperCase() !== filterValues.callingStatus.toUpperCase()) {
-          return false;
-        }
-      }
-
-      // Check for axisBankStatus
-      if (filterValues.employeeStatus !== "All") {
-        if (filterValues.employeeStatus === "No Status") {
-          if (
-            item["Employment Type"] !== undefined &&
-            item["Employment Type"] !== null &&
-            item["Employment Type"] !== ""
-          ) {
-            return false;
-          }
-        } else if (
-          item["Employment Type"]?.toUpperCase() !== filterValues.employeeStatus.toUpperCase()
-        ) {
-          return false;
-        }
-      }
-
-      // Check for axisBankStatus
-      if (filterValues.axisBankStatus !== "All") {
-        if (filterValues.axisBankStatus === "No Status") {
-          if (
-            item["BANKS STATUS"] !== undefined &&
-            item["BANKS STATUS"] !== null &&
-            item["BANKS STATUS"] !== ""
-          ) {
-            return false;
-          }
-        } else if (
-          item["BANKS STATUS"]?.toUpperCase() !== filterValues.axisBankStatus.toUpperCase()
-        ) {
-          return false;
-        }
-      }
-
-      // Check for sbiBankStatus
-      if (filterValues.sbiBankStatus !== "All") {
-        if (filterValues.sbiBankStatus === "No Status") {
-          if (
-            item["BANKS STATUS_1"] !== undefined &&
-            item["BANKS STATUS_1"] !== null &&
-            item["BANKS STATUS_1"] !== ""
-          ) {
-            return false;
-          }
-        } else if (
-          item["BANKS STATUS_1"]?.toUpperCase() !== filterValues.sbiBankStatus.toUpperCase()
-        ) {
-          return false;
-        }
-      }
-
-      // Check for city
-      if (
-        filterValues.city.length > 0 &&
-        !filterValues.city.some((city) => city.toUpperCase() === item["CITY"]?.toUpperCase())
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-
-    setCount(filteredData?.length);
-    setValue(filteredData);
-
+    console.log(filterValues);
     setFilterOpen(false);
   };
+  const handleFilterClick = () => {
+    setPage(0);
+    setRowsPerPage(5)
+    setFilterOpen(true);
+  };
+
+  const timeoutIdRef = useRef(null);
+
+  const handleSearchChange = async (event) => {
+    setSearchTerm(event.target.value);
+
+    // Clear any existing timeout
+    clearTimeout(timeoutIdRef.current);
+
+    // Set a new timeout
+    timeoutIdRef.current = setTimeout(async () => {
+      setPage(0);
+      setRowsPerPage(5);
+      await searchData(event.target.value);
+    }, 2000);
+  };
+
+  const searchData = async (query) => {
+    try {
+      setLoading(true);
+      const response = await searchAndPaginate(page, rowsPerPage, query);
+      console.log(response.articles);
+      setData(response.articles.data);
+      setCount(response.articles.metadata.totalCount);
+      setLoading(false);
+    } catch (error) {
+      console.error("An error occurred:", error);
+    }
+  };
+
+  const fetchUniqueCities = async () => {
+    const array = [];
+    const fetchedData = await getUniqueCities();
+
+    fetchedData.forEach((element) => {
+      array.push(element["CITY"]);
+      console.log(array);
+      setUniqueCity(array);
+    });
+  };
+
 
   useEffect(() => {
-    setFilterValues((prevValues) => ({
-      ...prevValues,
-      city: personName,
-    }));
-  }, [personName]);
+    const fetchData = async () => {
+      setLoading(true);
+      let response;
+      if (Object.keys(filterValues).length === 0) {
+        // Fetch normal paginated data
+        response = await getPaginatedResult(page + 1, rowsPerPage);
 
+
+        const response = await getPaginatedResult(page + 1, rowsPerPage);
+        setCount(response.articles.metadata.totalCount);
+        setData(response.articles.data);
+
+
+
+      } else {
+        // Fetch filtered paginated data
+        response = await getPaginatedfilterData(page + 1, rowsPerPage, filterValues);
+        console.log(response)
+        setCount(response.total);
+        setData(response.data);
+      }
+   
+      setLoading(false);
+    };
+  
+    fetchData();
+  }, [page, rowsPerPage, filterValues]);
+  
   return (
     <>
       <Head>
@@ -211,12 +157,19 @@ const Page = () => {
             <Stack direction="row" justifyContent="space-between" spacing={4}>
               <Typography variant="h4">Data Reports</Typography>
               <Stack alignItems="center" direction="row" spacing={1}>
-                <CustomersSearch searchTerm={searchTerm} handleSearchChange={handleSearchChange} />
-                <Button onClick={handleFilterClick}>Filter</Button>
+                <CustomersSearch
+                  searchTerm={searchTerm}
+                  handleSearchChange={handleSearchChange}
+                  setData={setData}
+                />
+                <Button onClick={async()=>{
+                  handleFilterClick();
+                  await fetchUniqueCities()
+                }}>Filter</Button>
               </Stack>
             </Stack>
             <Stack direction="row" justifyContent="space-between" spacing={4}>
-              <Button
+              {/* <Button
                 color="danger"
                 disabled={!data}
                 onClick={() => {
@@ -224,20 +177,21 @@ const Page = () => {
                 }}
               >
                 Download
-              </Button>
+              </Button> */}
             </Stack>
-            {!data ? (
+            {loading ? (
               <Box sx={{ display: "flex", justifyContent: "center" }}>
                 <CircularProgress />
               </Box>
             ) : (
               <CustomersTable
                 count={count}
-                items={value}
+                items={data}
                 onPageChange={handlePageChange}
                 onRowsPerPageChange={handleRowsPerPageChange}
                 page={page}
                 rowsPerPage={rowsPerPage}
+                loading={loading}
               />
             )}
           </Stack>

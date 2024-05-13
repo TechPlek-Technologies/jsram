@@ -18,15 +18,17 @@ const MenuProps = {
   },
 };
 
-export default function MultipleSelectCheckmarks({ label, personName, setPersonName, names }) {
+export default function MultipleSelectCheckmarks({ label, personName, setPersonName, names,setFilterValues }) {
   const handleChange = (event) => {
     const {
       target: { value },
     } = event;
-    setPersonName(
-      // On autofill we get a stringified value.
-      typeof value === "string" ? value.split(",") : value
-    );
+    setPersonName(value); // Update personName state with the selected cities
+    // Update the city filter value in the filterValues state
+    setFilterValues((prevFilterValues) => ({
+      ...prevFilterValues,
+      CITY: value,
+    }));
   };
 
   return (

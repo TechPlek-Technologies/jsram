@@ -1,29 +1,42 @@
-
-import express from 'express';
-import fs from 'fs-extra';
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import authRouter from "./mvc/user/user.controller.js";
+import connection from "./config.js";
+import busboy from "connect-busboy";
+import dataRouter from "./mvc/data/data.controller.js";
+import excelRouter from "./mvc/excel/excel.controller.js";
 
 const app = express();
-const PORT = 4000;
+app.use(express.json({ limit: "500mb" }));
+app.use(express.urlencoded({ limit: "500mb", extended: true }));
+app.use(
+  cors({
+    origin: "*",
+  })
+);
 
-app.use(express.json());
+app.use(
+  busboy({
+    highWaterMark: 2 * 1024 * 1024, // Set 2MiB buffer
+  })
+);
 
-// Endpoint to receive JSON data and store it in a .json file
-app.post('/storeData', (req, res) => {
-  const jsonData = req.body;
-  fs.writeFileSync('data.json', JSON.stringify(jsonData));
-  res.send('Data stored successfully');
+dotenv.config();
+const port = process.env.PORT;
+
+connection();
+
+app.get("/", (req, res) => {
+  res.send("Welcome to homepage");
 });
 
-// Endpoint to fetch stored JSON data
-app.get('/getData', (req, res) => {
-  try {
-    const jsonData = fs.readFileSync('data.json', 'utf8');
-    res.json(JSON.parse(jsonData));
-  } catch (error) {
-    res.status(500).send('Error fetching data');
-  }
-});
+app.use("/auth", authRouter);
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+app.use("/api", dataRouter);
+
+app.use("/excel", excelRouter);
+
+app.listen(port, () => {
+  console.log(`Server is running on port ${port}`);
 });
