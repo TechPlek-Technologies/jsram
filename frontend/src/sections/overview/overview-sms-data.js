@@ -99,6 +99,5 @@ export const OverviewSmsData = (props) => {
 };
 
 OverviewSmsData.propTypes = {
-  data: PropTypes.array,
   sx: PropTypes.object,
 };

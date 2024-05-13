@@ -25,9 +25,10 @@ const Page = () => {
   const [value, setValue] = useState(data);
   const [searchTerm, setSearchTerm] = useState("");
   const [personName, setPersonName] = useState([]);
-  const [uniqueCity, setUniqueCity] = useState([]);
+  const [uniqueCity, setUniqueCity] = useState(null);
   const [isFilterOpen, setFilterOpen] = useState(false);
   const [data, setData] = useState(null);
+  const [downloadButton, setDownloadButton]=useState(false);
   const [filterValues, setFilterValues] = useState({
     CITY: [], // Update from 'city' to 'CITY'
     "WHATS APP": "All", // Update from 'whatsappStatus' to 'WHATS APP'
@@ -61,7 +62,6 @@ const Page = () => {
 
   const handleFilterOptionClick = async () => {
     // Use filterValues state to filter your main data
-    console.log(filterValues);
     setFilterOpen(false);
   };
   const handleFilterClick = () => {
@@ -105,11 +105,17 @@ const Page = () => {
 
     fetchedData.forEach((element) => {
       array.push(element["CITY"]);
-      console.log(array);
       setUniqueCity(array);
     });
   };
 
+
+  const handleDownload=async ()=>{
+    await fetchUniqueCities()
+    resetFilters();
+    setDownloadButton(true);
+    setFilterOpen(true);
+  }
 
   useEffect(() => {
     const fetchData = async () => {
@@ -129,7 +135,6 @@ const Page = () => {
       } else {
         // Fetch filtered paginated data
         response = await getPaginatedfilterData(page + 1, rowsPerPage, filterValues);
-        console.log(response)
         setCount(response.total);
         setData(response.data);
       }
@@ -140,6 +145,26 @@ const Page = () => {
     fetchData();
   }, [page, rowsPerPage, filterValues]);
   
+  const resetFilters = () => {
+
+    setPersonName([]);
+    setFilterValues({
+      CITY: [], // Update from 'city' to 'CITY'
+      "WHATS APP": "All", // Update from 'whatsappStatus' to 'WHATS APP'
+      "EMPLOYMENT TYPE": "All", // Update from 'employeeStatus' to 'EMPLOYMENT TYPE'
+      DATE: null, // Update from 'whatsappFromDate' to 'DATE'
+      DATE_3: null, // Update from 'whatsappToDate' to 'DATE_3'
+      SMS: "All", // Update from 'smsStatus' to 'SMS'
+      DATE_4: null, // Update from 'smsFromDate' to 'DATE_4'
+      CALLING: "All", // Update from 'callingStatus' to 'CALLING'
+      CALLING: null, // Update from 'callingFromDate' to 'CALLING'
+      DATE_5: null, // Update from 'callingToDate' to 'DATE_5'
+      "LOGIN DONE": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
+      "LOGIN BANK": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
+      "BANKS STATUS_1": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
+      "BANKS STATUS": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
+    });
+  };
   return (
     <>
       <Head>
@@ -163,21 +188,22 @@ const Page = () => {
                   setData={setData}
                 />
                 <Button onClick={async()=>{
+                  setDownloadButton(false)
                   handleFilterClick();
                   await fetchUniqueCities()
                 }}>Filter</Button>
               </Stack>
             </Stack>
             <Stack direction="row" justifyContent="space-between" spacing={4}>
-              {/* <Button
+              <Button
                 color="danger"
                 disabled={!data}
                 onClick={() => {
-                  handleDownload(value, "Data");
+                  handleDownload();
                 }}
               >
                 Download
-              </Button> */}
+              </Button>
             </Stack>
             {loading ? (
               <Box sx={{ display: "flex", justifyContent: "center" }}>
@@ -207,6 +233,8 @@ const Page = () => {
         setFilterOpen={setFilterOpen}
         handleFilterClose={handleFilterClose}
         handleFilterOptionClick={handleFilterOptionClick}
+        resetFilters={resetFilters}
+        downloadButton={downloadButton}
       />
     </>
   );

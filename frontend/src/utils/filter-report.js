@@ -13,8 +13,11 @@ import { Stack } from "@mui/system";
 import { useState } from "react";
 import MultipleSelectCheckmarks from "./select-checkbox";
 import { DatePicker } from "@mui/x-date-pickers";
+import { DownloadfilterData } from "src/api/api";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
-const FilterPop = ({handleFilterOptionClick,personName,setPersonName,filterValues,cities,setFilterValues,isFilterOpen, setFilterOpen, handleFilterClose }) => {
+const FilterPop = ({downloadButton,resetFilters,handleFilterOptionClick,personName,setPersonName,filterValues,cities,setFilterValues,isFilterOpen, setFilterOpen, handleFilterClose }) => {
   
 
   const handleChange = (event) => {
@@ -26,26 +29,7 @@ const FilterPop = ({handleFilterOptionClick,personName,setPersonName,filterValue
     }));
 
   };
-  const resetFilters = () => {
 
-    setPersonName([]);
-    setFilterValues({
-      CITY: [], // Update from 'city' to 'CITY'
-      "WHATS APP": "All", // Update from 'whatsappStatus' to 'WHATS APP'
-      "EMPLOYMENT TYPE": "All", // Update from 'employeeStatus' to 'EMPLOYMENT TYPE'
-      DATE: null, // Update from 'whatsappFromDate' to 'DATE'
-      DATE_3: null, // Update from 'whatsappToDate' to 'DATE_3'
-      SMS: "All", // Update from 'smsStatus' to 'SMS'
-      DATE_4: null, // Update from 'smsFromDate' to 'DATE_4'
-      CALLING: "All", // Update from 'callingStatus' to 'CALLING'
-      CALLING: null, // Update from 'callingFromDate' to 'CALLING'
-      DATE_5: null, // Update from 'callingToDate' to 'DATE_5'
-      "LOGIN DONE": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
-      "LOGIN BANK": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
-      "BANKS STATUS_1": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
-      "BANKS STATUS": "All", // Update from 'axisBankStatus' to 'LOGIN DONE'
-    });
-  };
 
   const handleDateChange = (label, date) => {
     setFilterValues((prevValues) => ({
@@ -61,6 +45,28 @@ const FilterPop = ({handleFilterOptionClick,personName,setPersonName,filterValue
     }));
   };
 
+  const downloadExcel = async () => {
+    try {
+      const response = await DownloadfilterData(filterValues); // Assuming DownloadfilterData is a function that makes the API call to fetch data from the backend
+      const data = response.data; // Assuming the data is received as an array of objects
+  
+      // Filter out unwanted fields
+      const filteredData = data.map(item => {
+        const { __v, createdAt, updatedAt, _id, ...rest } = item;
+        return rest;
+      });
+  
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(filteredData);
+  
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Sheet1');
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+  
+      saveAs(new Blob([excelBuffer], { type: 'application/octet-stream' }), 'data.csv');
+    } catch (error) {
+      console.error("Error downloading Excel:", error);
+    }
+  };
   return (
     <Dialog fullWidth maxWidth="md" open={isFilterOpen} onClose={handleFilterClose}>
     <DialogTitle>Filter Options</DialogTitle>
@@ -256,9 +262,12 @@ const FilterPop = ({handleFilterOptionClick,personName,setPersonName,filterValue
       >
         Cancel
       </Button>
-      <Button onClick={handleFilterOptionClick} color="primary">
+      {!downloadButton && <Button onClick={handleFilterOptionClick} color="primary">
         Save
-      </Button>
+      </Button>}
+      {downloadButton && <Button onClick={downloadExcel} color="primary">
+        Download
+      </Button>}
     </DialogActions>
   </Dialog>
   

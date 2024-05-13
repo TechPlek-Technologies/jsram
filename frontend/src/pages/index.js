@@ -11,13 +11,12 @@ import { OverviewEmailData } from "src/sections/overview/overview-email-data";
 import { OverviewIVRData } from "src/sections/overview/overview-ivr-data";
 import { OverviewAxisBankData } from "src/sections/overview/overview-axisBanking-data";
 import { OverviewSBIBankData } from "src/sections/overview/overview-sbiBanking-data";
-import { useDataContext } from "src/contexts/data-context";
 import { useEffect, useState } from "react";
 import { getDashBoardInfo, getUniqueCities } from "src/api/api";
 
 const Page = () => {
   // const {  loading } = useDataContext();
-  const [cityCounts, setCityCounts] = useState([]);
+  const [cityCounts, setCityCounts] = useState(null);
   const [loading, setLoading] = useState(true);
   const [dashboardData,setDashBoardData]=useState([]);
 
@@ -32,7 +31,6 @@ const Page = () => {
     const dashboardInfo=async ()=>{
       
       const response=await getDashBoardInfo();
-      console.log(response)
       setDashBoardData(response)
 
     }
@@ -94,7 +92,7 @@ const Page = () => {
                 <OverviewSBIBankData sx={{ height: "100%" }} data={dashboardData} />
               </Grid>
               <Grid xs={12} md={6} lg={4}>
-               {dashboardData&&<OverviewCityCount cities={cityCounts} sx={{ height: "100%" }} />} 
+               {cityCounts&&<OverviewCityCount cities={cityCounts} sx={{ height: "100%" }} />} 
               </Grid>
             </Grid>
           )}

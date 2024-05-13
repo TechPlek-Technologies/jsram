@@ -51,7 +51,6 @@ export const OverviewData = (props) => {
       alert("Enter Valid Range")
     }
   };
-  console.log(data)
   
   return (
     <>

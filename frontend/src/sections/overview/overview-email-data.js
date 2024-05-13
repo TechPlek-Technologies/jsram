@@ -96,6 +96,5 @@ export const OverviewEmailData = (props) => {
 
 OverviewEmailData.propTypes = {
  
-  data: PropTypes.array,
   sx: PropTypes.object,
 };

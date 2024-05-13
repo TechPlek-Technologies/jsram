@@ -27,7 +27,20 @@ const Page = () => {
   const { data } = useDataContext();
   const [fileName, setFilename] = useState("");
   const [progress, setProgress] = useState(0);
+  const [originalArray, setOriginalArray] = useState([]);
 
+  useEffect(() => {
+    fetchData(); // Fetch data when component mounts
+  }, []); // Empty dependency array means this effect runs only once when the component mounts
+
+  const fetchData = async () => {
+    try {
+      const response = await axios.get(`${domain}/api/data`);
+      setOriginalArray(response.data.data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
 
   const handlePageChange = useCallback((event, value) => {
     setPage(value);
@@ -135,7 +148,6 @@ const Page = () => {
 
       try {
         const formattedData = await formatExcelData(blob);
-        console.log(formattedData);
         setUploadData(formattedData);
         setValue(formattedData);
         setCount(formattedData.length);
@@ -205,8 +217,10 @@ const Page = () => {
     const resultArray = [];
     const uploadMap = {};
 
-    const response = await axios.get(`${domain}/api/data`)
-    const originalArray = response.data.data;
+    if (originalArray.length === 0) {
+      const response = await axios.get(`${domain}/api/data`);
+     setOriginalArray(response.data.data); // Update originalArray
+    }
 
     console.log("compareDataArrays", originalArray.length, uploadArray.length)
     // Create map for faster lookups
@@ -236,8 +250,6 @@ const Page = () => {
     await updateInDB(resultArray)
   }
 
-
-
   function compareAndUpdate(original, newObj) {
     let remarks = original["REMARKS"] || "";
 
@@ -265,41 +277,50 @@ const Page = () => {
     return original;
   }
 
-
   const CHUNK_SIZE = 500;
 
   const updateInDB = async (data) => {
     try {
       const totalChunks = Math.ceil(data.length / CHUNK_SIZE); // Calculate total number of chunks
       let uploadedChunks = 0; // Initialize uploaded chunks counter
-
+      const failedChunks = []; // Array to store failed chunks
+  
       // Split the data into chunks
       for (let i = 0; i < data.length; i += CHUNK_SIZE) {
         const chunk = data.slice(i, i + CHUNK_SIZE);
         try {
           const result = await axios.post(`${domain}/api/upload`, chunk);
           console.log(`Chunk ${i / CHUNK_SIZE + 1} uploaded successfully`);
-
+  
           // Increment uploaded chunks counter
           uploadedChunks++;
-
+  
           // Calculate progress percentage
           const progressPercentage = Math.round((uploadedChunks / totalChunks) * 100);
-
+  
           // Update progress state
           setProgress(progressPercentage);
         } catch (error) {
-          console.log("error", error);
+          console.log("Error uploading chunk:", error);
+          // Push failed chunk to the array
+          failedChunks.push(chunk);
         }
       }
-      alert("All data uploaded successfully");
+  
+      if (failedChunks.length === 0) {
+        alert("All data uploaded successfully");
+      } else {
+        console.log("Failed chunks:", failedChunks);
+        alert("Some chunks failed to upload. upload again");
+        setValue(failedChunks);
+      }
     } catch (error) {
       alert("Data upload failed");
       console.error('Error:', error);
       throw error; // Re-throw the error to be caught in the calling function
     }
   };
-
+  
   return (
     <>
       <Head>

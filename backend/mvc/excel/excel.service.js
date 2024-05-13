@@ -2,6 +2,8 @@ import fs from "fs-extra";
 import path from "path";
 import { fileURLToPath } from "url";
 import mime from "mime";
+import { Transform } from "stream";
+import Data from "../data/data.model.js";
 
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -69,4 +71,56 @@ export const downloadFile = async (req, res) => {
         res.status(500).send("Internal Server Error");
       }
 };
+
+class JSONToCSVTransform extends Transform {
+  constructor(options) {
+    super(options);
+    this.headersWritten = false;
+  }
+  _transform(chunk, encoding, callback) {
+    try {
+      console.log("Chunk:", chunk);
+      const chunkString = JSON.stringify(chunk); // Convert object to string
+      console.log("Chunk String:", chunkString);
+      if (!this.headersWritten) {
+        console.log("Headers:", Object.keys(chunk).join(','));
+        this.headersWritten = true;
+        this.push(Object.keys(chunk).join(',') + '\n');
+      }
+      this.push(Object.values(chunkString).join(',') + '\n'); // Push the stringified chunk
+      callback();
+    } catch (error) {
+      callback(error); // Pass error to callback
+    }
+  }
+  
+}
+
+export const downloadFilteredData = async (req, res) => {
+  const { filters } = req.body;
+  try {
+    // Build the query object based on the provided filters
+    const query = {};
+
+    for (const key in filters) {
+      if (filters[key] === null || filters[key] === "All" || key.startsWith("DATE")) {
+        continue;
+      } else {
+        const regex = new RegExp(filters[key], "i");
+        query[key.toUpperCase()] = { $regex: regex };
+      }
+    }
+
+    // Fetch data and send as JSON response
+    const filteredData = await Data.find(query);
+
+    return res.status(200).json({ data: filteredData });
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+
+
+
   

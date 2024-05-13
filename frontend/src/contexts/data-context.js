@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useReducer, useRef, useState } from 'react';
 import PropTypes from 'prop-types';
 import axios from 'axios';
+import { domain } from 'src/config';
+import { getDashBoardInfo } from 'src/api/api';
 
 const DATA_HANDLERS = {
   FETCH_DATA_SUCCESS: 'FETCH_DATA_SUCCESS',
@@ -43,27 +45,11 @@ export const DataProvider = (props) => {
   const initialized = useRef(false);
   const [loading, setLoading] = useState(false);
 
-  const fetchData = async () => {
-    try {
-      dispatch({ type: DATA_HANDLERS.SET_LOADING, payload: true });
-      const response = await axios.get(`http://jsram.aifuturevision.in:5000/api/read`);
-      
-      if (response.data) {
-        dispatch({ type: DATA_HANDLERS.FETCH_DATA_SUCCESS, payload: response.data });
-      } else {
-        dispatch({ type: DATA_HANDLERS.FETCH_DATA_FAILURE, payload: "No data found" });
-      }
-    } catch (error) {
-      dispatch({ type: DATA_HANDLERS.FETCH_DATA_FAILURE, payload: error.message });
-    } finally {
-      dispatch({ type: DATA_HANDLERS.SET_LOADING, payload: false });
-    }
-  };
 
   const initializeDataFromServer = async () => {
     try {
       dispatch({ type: DATA_HANDLERS.SET_LOADING, payload: true });
-      const result = (await axios.get(`http://jsram.aifuturevision.in:5000/getData`)).data;
+      const result = await getDashBoardInfo()
       // console.log(result);
       dispatch({ type: DATA_HANDLERS.FETCH_DATA_SUCCESS, payload: result });
     } catch (error) {
@@ -80,22 +66,13 @@ export const DataProvider = (props) => {
     }
   }, []);
 
-  const handleSyncButtonClick = async () => {
-    try {
-     await fetchData();
-      window.location.reload();
-    } catch (error) {
-      console.error('Error syncing data:', error);
-    }
-  };
 
   return (
     <DataContext.Provider
       value={{
         ...state,
         loading,
-        fetchData,
-        handleSyncButtonClick,
+        
       }}
     >
       {children}

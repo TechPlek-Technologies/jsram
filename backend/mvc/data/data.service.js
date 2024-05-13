@@ -5,8 +5,6 @@ export const getResult = async (req, res) => {
   try {
     // Query the database and collect all the results
     const results = await Data.find().lean();
-
-
     res.status(200).json({ success: true, message: 'Fetched successfully',data:results });
   } catch (err) {
     console.error('Error:', err);

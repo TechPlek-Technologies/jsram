@@ -96,6 +96,5 @@ export const OverviewWhatsAppData = (props) => {
 };
 
 OverviewWhatsAppData.propTypes = {
-  data: PropTypes.array,
   sx: PropTypes.object,
 };

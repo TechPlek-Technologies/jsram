@@ -45,12 +45,12 @@ export default function MultipleSelectCheckmarks({ label, personName, setPersonN
           renderValue={(selected) => selected.join(", ")}
           MenuProps={MenuProps}
         >
-          {names?.length===0 ? (
+          {names && names?.length===0 ? (
             <MenuItem>
               <ListItemText primary={"...Loading"} />
             </MenuItem>
           ) : (
-            names.map((name) => (
+            names && names.map((name) => (
               <MenuItem key={name} value={name}>
                 <Checkbox checked={personName.indexOf(name) > -1} />
                 <ListItemText primary={name} />
